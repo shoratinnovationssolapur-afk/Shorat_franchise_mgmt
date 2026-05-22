@@ -5,16 +5,19 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     // Correctly initialize state, perhaps from localStorage
-    const [authToken, setAuthToken] = useState(localStorage.getItem('authToken') || null);
+    const [authToken, setAuthToken] = useState(
+        localStorage.getItem('access_token') || localStorage.getItem('token') || null
+    );
 
     const login = (token) => {
         setAuthToken(token);
-        localStorage.setItem('authToken', token);
+        localStorage.setItem('access_token', token);
     };
 
     const logout = () => {
         setAuthToken(null);
-        localStorage.removeItem('authToken');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('token');
     };
 
     // The key is to correctly pass an object to the value prop

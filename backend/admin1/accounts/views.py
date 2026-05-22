@@ -1,4 +1,4 @@
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
@@ -54,9 +54,6 @@ def login_view(request):
         # ✅ Ensure role matches
         if user.role != role:
             return JsonResponse({"success": False, "error": "Role mismatch"}, status=403)
-
-        # ✅ Log user into session (optional if you just use JWT)
-        login(request, user)
 
         # ✅ Generate JWT tokens
         refresh = RefreshToken.for_user(user)

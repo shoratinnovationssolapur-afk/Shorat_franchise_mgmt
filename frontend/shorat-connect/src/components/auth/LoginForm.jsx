@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,7 @@ import {
 import { Eye, EyeOff, Lock, Mail, ShieldCheck, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { API_BASE_URL } from "@/utils/apiBase";
+import { AuthContext } from "@/pages/Admin/context/AuthContext";
 
 export const LoginForm = ({ onLogin }) => {
   const [email, setEmail] = useState("");
@@ -27,6 +28,7 @@ export const LoginForm = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { login: setAuthToken } = useContext(AuthContext);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -55,8 +57,9 @@ export const LoginForm = ({ onLogin }) => {
         localStorage.setItem("access_token", data.access);
         localStorage.setItem("refresh_token", data.refresh);
         localStorage.setItem("role", data.role || role);
-        localStorage.setItem("branch", data.branch || "");
+        localStorage.setItem("branch", data.branch ? JSON.stringify(data.branch) : "");
         localStorage.setItem("email", email);
+        setAuthToken(data.access);
 
         toast({
           title: "Login Successful",
