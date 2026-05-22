@@ -1,7 +1,8 @@
-from django.contrib.auth import authenticate
+from django.contrib.auth.hashers import check_password
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
+import time
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from admin1.add_franchise.models import AddFranchise
@@ -39,6 +40,7 @@ def get_user_branch_payload(user):
 @csrf_exempt
 def login_view(request):
     if request.method == "POST":
+        started_at = time.perf_counter()
         try:
             data = json.loads(request.body)
             email = data.get("email")
@@ -47,13 +49,17 @@ def login_view(request):
         except Exception:
             return JsonResponse({"success": False, "error": "Invalid request body"}, status=400)
 
-        user = authenticate(request, username=email, password=password)
-        if user is None:
-            return JsonResponse({"success": False, "error": "Invalid credentials"}, status=401)
+        user = User.objects.select_related("branch").filter(email__iexact=email).first()
+        if user is None or not check_password(password, user.password):
+            response = JsonResponse({"success": False, "error": "Invalid credentials"}, status=401)
+            response["X-Login-Time-Ms"] = str(round((time.perf_counter() - started_at) * 1000))
+            return response
 
         # ✅ Ensure role matches
         if user.role != role:
-            return JsonResponse({"success": False, "error": "Role mismatch"}, status=403)
+            response = JsonResponse({"success": False, "error": "Role mismatch"}, status=403)
+            response["X-Login-Time-Ms"] = str(round((time.perf_counter() - started_at) * 1000))
+            return response
 
         # ✅ Generate JWT tokens
         refresh = RefreshToken.for_user(user)
@@ -69,7 +75,7 @@ def login_view(request):
 
         display_name = get_user_display_name(user)
 
-        return JsonResponse({
+        response = JsonResponse({
             "success": True,
             "message": f"Welcome {display_name}!",
             "name": display_name,
@@ -80,6 +86,8 @@ def login_view(request):
             "access": access_token,   # 👈 JWT access token
             "refresh": refresh_token, # 👈 JWT refresh token
         })
+        response["X-Login-Time-Ms"] = str(round((time.perf_counter() - started_at) * 1000))
+        return response
 
     return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
 
