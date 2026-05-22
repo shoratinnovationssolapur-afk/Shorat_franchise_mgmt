@@ -25,6 +25,17 @@ def get_user_display_name(user):
 
     return user.get_full_name() or user.username or user.email
 
+
+def get_user_branch_payload(user):
+    if not user.branch_id:
+        return None
+
+    return {
+        "id": user.branch_id,
+        "name": getattr(user.branch, "name", str(user.branch)),
+    }
+
+
 @csrf_exempt
 def login_view(request):
     if request.method == "POST":
@@ -66,7 +77,7 @@ def login_view(request):
             "message": f"Welcome {display_name}!",
             "name": display_name,
             "role": user.role,
-            "branch": user.branch,
+            "branch": get_user_branch_payload(user),
             "email": user.email,
             "redirect_url": role_redirects.get(user.role, "/login"),
             "access": access_token,   # 👈 JWT access token

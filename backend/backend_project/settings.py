@@ -16,17 +16,21 @@ DEFAULT_USER_PASSWORD = os.getenv("DEFAULT_USER_PASSWORD", "")
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
+    "shorat-franchise-mgmt-backend.onrender.com",
+    "shorat-franchise-mgmt-frontend.onrender.com",
     "franchise-management-system-for-deploy-1.onrender.com",   # backend on Render
 
     "franchise-management-system-for-deploy1.onrender.com",    # frontend host (without https prefix)
     ".onrender.com",
-    "https://franchise.shoratinnovations.com",
+    "franchise.shoratinnovations.com",
 
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://shorat-franchise-mgmt-backend.onrender.com",
+    "https://shorat-franchise-mgmt-frontend.onrender.com",
     "https://franchise-management-system-for-deploy-1.onrender.com",
     "https://franchise-management-system-for-deploy1.onrender.com",
     "https://franchise.shoratinnovations.com",
@@ -140,6 +144,8 @@ MEDIA_ROOT = BASE_DIR / "media"
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://shorat-franchise-mgmt-frontend.onrender.com",
+    "https://shorat-franchise-mgmt-backend.onrender.com",
     "https://franchise-management-system-for-deploy1.onrender.com",   # frontend (exact)
     "https://franchise-management-system-for-deploy-1.onrender.com",  # backend origin (if needed)
     "https://franchise.shoratinnovations.com",
