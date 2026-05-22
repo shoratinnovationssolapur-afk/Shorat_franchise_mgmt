@@ -28,7 +28,6 @@ export const DashboardContent = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        console.log("Franchises API response:", res.data);
         setFranchises(res.data.results || res.data || []);
       } catch (err) {
         console.error("Dashboard fetch error:", err.response || err);
@@ -43,7 +42,7 @@ export const DashboardContent = () => {
     };
 
     fetchFranchises();
-  }, [token, navigate]);
+  }, []);
 
   if (loading) return <p className="p-6">Loading franchises...</p>;
 
