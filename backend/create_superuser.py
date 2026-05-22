@@ -43,9 +43,8 @@ else:
             setattr(user, field, value)
             changed = True
 
-    if os.getenv("DJANGO_SUPERUSER_RESET_PASSWORD", "False").lower() == "true":
-        user.set_password(PASSWORD)
-        changed = True
+    user.set_password(PASSWORD)
+    changed = True
 
     if changed:
         user.save()
