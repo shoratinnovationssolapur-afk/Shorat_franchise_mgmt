@@ -55,7 +55,7 @@ export const LoginForm = ({ onLogin }) => {
 
       if (response.ok) {
         localStorage.setItem("access_token", data.access);
-        localStorage.setItem("refresh_token", data.refresh);
+        localStorage.removeItem("refresh_token");
         localStorage.setItem("role", data.role || role);
         localStorage.setItem("branch", data.branch ? JSON.stringify(data.branch) : "");
         localStorage.setItem("email", email);

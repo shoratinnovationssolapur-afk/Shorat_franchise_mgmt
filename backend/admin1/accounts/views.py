@@ -4,7 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 import time
 from django.contrib.auth import get_user_model
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import AccessToken
 from admin1.add_franchise.models import AddFranchise
 from admin1.add_staff.models import Staff
 
@@ -61,10 +61,8 @@ def login_view(request):
             response["X-Login-Time-Ms"] = str(round((time.perf_counter() - started_at) * 1000))
             return response
 
-        # ✅ Generate JWT tokens
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-        refresh_token = str(refresh)
+        # ✅ Generate JWT access token
+        access_token = str(AccessToken.for_user(user))
 
         # ✅ Role-based redirect mapping
         role_redirects = {
@@ -84,7 +82,6 @@ def login_view(request):
             "email": user.email,
             "redirect_url": role_redirects.get(user.role, "/login"),
             "access": access_token,   # 👈 JWT access token
-            "refresh": refresh_token, # 👈 JWT refresh token
         })
         response["X-Login-Time-Ms"] = str(round((time.perf_counter() - started_at) * 1000))
         return response
