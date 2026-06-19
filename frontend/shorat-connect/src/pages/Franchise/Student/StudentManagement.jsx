@@ -18,6 +18,7 @@ import {
   Mail,
   MessageCircle,
   Phone,
+  Receipt,
   Search,
   Send,
   Trash2,
@@ -247,6 +248,7 @@ export default function StudentManagement() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [sendingAll, setSendingAll] = useState(false);
   const [sendingStudentId, setSendingStudentId] = useState(null);
+  const [sendingReceiptId, setSendingReceiptId] = useState(null);
 
   const loadData = async () => {
     try {
@@ -372,6 +374,27 @@ export default function StudentManagement() {
       );
     } finally {
       setSendingStudentId(null);
+    }
+  };
+
+  const handleSendReceipt = async (student) => {
+    try {
+      setSendingReceiptId(student.id);
+      const api = getApi();
+      const res = await api.post(`students/${student.id}/send-fee-receipt/`);
+      const paidAmount = res.data?.paid_amount
+        ? formatINR(res.data.paid_amount)
+        : formatINR(student.fees_paid);
+      alert(`WhatsApp fee receipt sent to ${student.name} for ${paidAmount}.`);
+    } catch (err) {
+      console.error(err);
+      alert(
+        err.response?.data?.error ||
+          err.response?.data?.whatsapp?.error ||
+          "Unable to send fee receipt."
+      );
+    } finally {
+      setSendingReceiptId(null);
     }
   };
 
@@ -576,6 +599,16 @@ export default function StudentManagement() {
                                 title="Send fee reminder"
                               >
                                 <MessageCircle className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleSendReceipt(student)}
+                                disabled={paid <= 0 || sendingReceiptId === student.id}
+                                aria-label="Send fee receipt on WhatsApp"
+                                title="Send fee receipt on WhatsApp"
+                              >
+                                <Receipt className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="destructive"
