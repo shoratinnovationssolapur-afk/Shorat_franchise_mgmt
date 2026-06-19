@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { getApi } from "@/utils/api";
+import { Receipt } from "lucide-react";
 
 // Helpers
 const pct = (num, den) => (den === 0 ? 0 : Math.round((num / den) * 100));
 const attendancePct = (days) =>
   pct(days.reduce((a, d) => a + (d.present || 0), 0), days.length);
-const formatINR = (n) => `₹${Number(n || 0).toLocaleString()}`;
+const formatINR = (n) => `Rs ${Number(n || 0).toLocaleString("en-IN")}`;
 
 const StatusBadge = ({ status }) => (
   <Badge
@@ -19,20 +21,12 @@ const StatusBadge = ({ status }) => (
   </Badge>
 );
 
-const getApi = () => {
-  const token = localStorage.getItem("access_token");
-  return axios.create({
-    baseURL: `${import.meta.env.VITE_API_URL}/api/`,  // <- add /api/ here
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-};
-
-
 export default function StudentManagement() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [franchises, setFranchises] = useState([]);
   const [selectedFranchise, setSelectedFranchise] = useState("All");
+  const [sendingReceiptId, setSendingReceiptId] = useState(null);
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -40,11 +34,13 @@ export default function StudentManagement() {
       try {
         const api = getApi();
         const res = await api.get("students/");
-        const students = Array.isArray(res.data) ? res.data : res.data.results;
+        const students = Array.isArray(res.data) ? res.data : res.data.results || [];
 
         const normalized = students.map((s) => ({
           ...s,
-          batch_name: s.batch?.name || s.batch || "",
+          batch_name: Array.isArray(s.batch_names)
+            ? s.batch_names.join(", ")
+            : s.batch?.name || s.batch || "",
           franchise_id: s.franchise?.id || s.franchise,
           franchise_name: s.franchise?.name || s.franchise || "",
           fees_paid: s.fees_paid || 0,
@@ -74,6 +70,27 @@ export default function StudentManagement() {
     selectedFranchise === "All"
       ? rows
       : rows.filter((r) => String(r.franchise_id) === String(selectedFranchise));
+
+  const handleSendReceipt = async (student) => {
+    try {
+      setSendingReceiptId(student.id);
+      const api = getApi();
+      const res = await api.post(`students/${student.id}/send-fee-receipt/`);
+      const paidAmount = res.data?.paid_amount
+        ? formatINR(res.data.paid_amount)
+        : formatINR(student.fees_paid);
+      alert(`WhatsApp fee receipt sent to ${student.name} for ${paidAmount}.`);
+    } catch (err) {
+      console.error(err);
+      alert(
+        err.response?.data?.error ||
+          err.response?.data?.whatsapp?.error ||
+          "Unable to send fee receipt."
+      );
+    } finally {
+      setSendingReceiptId(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 p-4 sm:p-6">
@@ -115,6 +132,7 @@ export default function StudentManagement() {
                       "Fees Paid",
                       "Pending",
                       "Status",
+                      "Actions",
                     ].map((head) => (
                       <th
                         key={head}
@@ -128,13 +146,13 @@ export default function StudentManagement() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {loading ? (
                     <tr>
-                      <td colSpan={9} className="text-center py-6 text-gray-500">
+                      <td colSpan={10} className="text-center py-6 text-gray-500">
                         Loading students...
                       </td>
                     </tr>
                   ) : filteredRows.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="text-center py-6 text-gray-500">
+                      <td colSpan={10} className="text-center py-6 text-gray-500">
                         No students found
                       </td>
                     </tr>
@@ -154,6 +172,18 @@ export default function StudentManagement() {
                         <td className="px-4 py-3">{formatINR(r.fees_pending)}</td>
                         <td className="px-4 py-3">
                           <StatusBadge status={r.status} />
+                        </td>
+                        <td className="px-4 py-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSendReceipt(r)}
+                            disabled={Number(r.fees_paid || 0) <= 0 || sendingReceiptId === r.id}
+                            aria-label="Send fee receipt on WhatsApp"
+                            title="Send fee receipt on WhatsApp"
+                          >
+                            <Receipt className="h-4 w-4" />
+                          </Button>
                         </td>
                       </tr>
                     ))
@@ -178,6 +208,18 @@ export default function StudentManagement() {
                     <div>Attendance: {attendancePct(r.attendance)}%</div>
                     <div>Fees Paid: {formatINR(r.fees_paid)}</div>
                     <div>Pending: {formatINR(r.fees_pending)}</div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSendReceipt(r)}
+                      disabled={Number(r.fees_paid || 0) <= 0 || sendingReceiptId === r.id}
+                      aria-label="Send fee receipt on WhatsApp"
+                      title="Send fee receipt on WhatsApp"
+                      className="mt-3 w-full"
+                    >
+                      <Receipt className="h-4 w-4" />
+                      Send Receipt
+                    </Button>
                   </div>
                 </Card>
               ))}
