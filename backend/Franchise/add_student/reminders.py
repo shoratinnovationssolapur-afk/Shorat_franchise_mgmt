@@ -4,6 +4,7 @@ from decimal import Decimal
 import requests
 from django.conf import settings
 from django.core.mail import send_mail
+from django.utils import timezone
 
 
 def get_pending_amount(student):
@@ -20,6 +21,21 @@ def build_fee_reminder_message(student, pending_amount):
         f"Dear {student.name}, your fee payment of Rs {amount} is pending for "
         f"{franchise}. Please complete the payment at the earliest. If already paid, "
         "please ignore this reminder."
+    )
+
+
+def build_fee_receipt_message(student):
+    paid_amount = student.fees_paid or Decimal("0")
+    total_fees = student.total_fees or Decimal("0")
+    pending_amount = get_pending_amount(student)
+    franchise = student.franchise or "your institute"
+    receipt_date = timezone.localdate().strftime("%d %b %Y")
+
+    return (
+        f"Dear {student.name}, payment receipt from {franchise}: "
+        f"Rs {paid_amount:.2f} received toward your fees on {receipt_date}. "
+        f"Total fees: Rs {total_fees:.2f}. "
+        f"Balance pending: Rs {pending_amount:.2f}. Thank you."
     )
 
 
@@ -116,5 +132,30 @@ def send_fee_reminder(student):
         "pending_amount": f"{pending_amount:.2f}",
         "sent": email_result.get("sent", False) or whatsapp_result.get("sent", False),
         "email": email_result,
+        "whatsapp": whatsapp_result,
+    }
+
+
+def send_fee_receipt(student):
+    paid_amount = student.fees_paid or Decimal("0")
+    if paid_amount <= 0:
+        return {
+            "student_id": student.id,
+            "student_name": student.name,
+            "paid_amount": "0.00",
+            "sent": False,
+            "error": "No paid fees recorded for this student.",
+        }
+
+    message = build_fee_receipt_message(student)
+    whatsapp_result = send_fee_whatsapp(student, message)
+
+    return {
+        "student_id": student.id,
+        "student_name": student.name,
+        "paid_amount": f"{paid_amount:.2f}",
+        "total_fees": f"{(student.total_fees or Decimal('0')):.2f}",
+        "pending_amount": f"{get_pending_amount(student):.2f}",
+        "sent": whatsapp_result.get("sent", False),
         "whatsapp": whatsapp_result,
     }
