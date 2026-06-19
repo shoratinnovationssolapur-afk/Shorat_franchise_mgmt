@@ -5,7 +5,11 @@ from django.db.models import Sum
 from rest_framework import status
 from .models import Student
 from .serializers import StudentSerializer
-from .reminders import get_pending_amount, send_fee_reminder as send_student_fee_reminder
+from .reminders import (
+    get_pending_amount,
+    send_fee_receipt as send_student_fee_receipt,
+    send_fee_reminder as send_student_fee_reminder,
+)
 
 class StudentViewSet(viewsets.ModelViewSet):
     serializer_class = StudentSerializer
@@ -64,6 +68,13 @@ class StudentViewSet(viewsets.ModelViewSet):
     def send_fee_reminder(self, request, pk=None):
         student = self.get_object()
         result = send_student_fee_reminder(student)
+        response_status = status.HTTP_200_OK if result.get("sent") else status.HTTP_400_BAD_REQUEST
+        return Response(result, status=response_status)
+
+    @action(detail=True, methods=["post"], url_path="send-fee-receipt")
+    def send_fee_receipt(self, request, pk=None):
+        student = self.get_object()
+        result = send_student_fee_receipt(student)
         response_status = status.HTTP_200_OK if result.get("sent") else status.HTTP_400_BAD_REQUEST
         return Response(result, status=response_status)
 
